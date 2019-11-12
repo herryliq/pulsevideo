@@ -68,8 +68,6 @@ G_DEFINE_TYPE (GstPulseVideoSrc, gst_pulsevideo_src, GST_TYPE_BIN);
 
 static void gst_pulsevideo_src_finalize (GObject * gobject);
 
-static gboolean gst_pulsevideo_src_start (GstPulseVideoSrc * bsrc);
-
 static void gst_pulsevideo_src_set_property (GObject * object, guint prop_id,
     const GValue * value, GParamSpec * pspec);
 static void gst_pulsevideo_src_get_property (GObject * object, guint prop_id,
@@ -273,13 +271,6 @@ gst_pulsevideo_src_change_state (GstElement * element,
 
   src = GST_PULSEVIDEO_SRC (element);
 
-  if (transition == GST_STATE_CHANGE_READY_TO_PAUSED) {
-    if (!gst_pulsevideo_src_start ((GstPulseVideoSrc*) element)) {
-      result = GST_STATE_CHANGE_FAILURE;
-      goto failure;
-    }
-  }
-
   /* This will cause our child elements to change state too. */
   result = GST_ELEMENT_CLASS (parent_class)->change_state (element, transition);
   if (result == GST_STATE_CHANGE_FAILURE)
@@ -384,34 +375,6 @@ done:
 
   if (err)
     g_propagate_error (error, err);
-
-  return ret;
-}
-
-/* create a socket for connecting to remote server */
-static gboolean
-gst_pulsevideo_src_start (GstPulseVideoSrc * src)
-{
-  GError *error = NULL;
-  gboolean ret = FALSE;
-
-  switch (gst_pulsevideo_src_reinit (src, NULL, &error)) {
-  case PV_INIT_SUCCESS:
-    ret = TRUE;
-    break;
-  case PV_INIT_NOOBJECT:
-    GST_ELEMENT_ERROR (src, RESOURCE, NOT_FOUND, (NULL),
-        ("Call to VideoSource failed: %s", error->message));
-    ret = FALSE;
-    break;
-  case PV_INIT_FAILURE:
-    GST_ELEMENT_ERROR (src, RESOURCE, NOT_FOUND, (NULL),
-        ("Call to VideoSource failed: %s", error->message));
-    ret = FALSE;
-    break;
-  default:
-    g_return_val_if_reached(FALSE);
-  }
 
   return ret;
 }
